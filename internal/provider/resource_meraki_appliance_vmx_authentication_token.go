@@ -137,7 +137,13 @@ func (r *ApplianceVMXAuthenticationTokenResource) Create(ctx context.Context, re
 	tflog.Debug(ctx, fmt.Sprintf("%s: Beginning Create", plan.Id.ValueString()))
 
 	// Create object
-	body := plan.toBody(ctx, ApplianceVMXAuthenticationToken{})
+	// Write-only attributes are null in the plan, read them from the config
+	var config ApplianceVMXAuthenticationToken
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	body := plan.withWriteOnly(config).toBody(ctx, ApplianceVMXAuthenticationToken{})
 	res, err := r.client.Post(plan.getPath(), body)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Failed to configure object (POST/PUT), got error: %s, %s", err, res.String()))

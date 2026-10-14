@@ -177,7 +177,13 @@ func (r *WirelessZigbeeResource) Create(ctx context.Context, req resource.Create
 	}
 
 	// Create object
-	body := plan.toBody(ctx, WirelessZigbee{})
+	// Write-only attributes are null in the plan, read them from the config
+	var config WirelessZigbee
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	body := plan.withWriteOnly(config).toBody(ctx, WirelessZigbee{})
 	res, err := r.client.Put(plan.getPath(), body)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Failed to configure object (POST/PUT), got error: %s, %s", err, res.String()))
@@ -289,7 +295,13 @@ func (r *WirelessZigbeeResource) Update(ctx context.Context, req resource.Update
 
 	tflog.Debug(ctx, fmt.Sprintf("%s: Beginning Update", plan.Id.ValueString()))
 
-	body := plan.toBody(ctx, state)
+	// Write-only attributes are null in the plan, read them from the config
+	var config WirelessZigbee
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	body := plan.withWriteOnly(config).toBody(ctx, state)
 	res, err := r.client.Put(plan.getPath(), body)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Failed to configure object (PUT), got error: %s, %s", err, res.String()))

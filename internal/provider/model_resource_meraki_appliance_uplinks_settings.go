@@ -195,6 +195,16 @@ func (data ApplianceUplinksSettings) toBody(ctx context.Context, state Appliance
 	return body
 }
 
+// withWriteOnly returns a copy of data with the values of write-only attributes
+// taken from config. Terraform always sets write-only attributes to null in the
+// plan, so their values are only available in the configuration. Nested lists
+// are cloned, so data itself is not modified.
+func (data ApplianceUplinksSettings) withWriteOnly(config ApplianceUplinksSettings) ApplianceUplinksSettings {
+	data.InterfacesWan1PppoeAuthenticationPasswordWo = config.InterfacesWan1PppoeAuthenticationPasswordWo
+	data.InterfacesWan2PppoeAuthenticationPasswordWo = config.InterfacesWan2PppoeAuthenticationPasswordWo
+	return data
+}
+
 // End of section. //template:end toBody
 
 // Section below is generated&owned by "gen/generator.go". //template:begin toBodyPreservingNulls

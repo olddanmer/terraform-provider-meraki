@@ -330,8 +330,39 @@ func (data {{camelCase .Name}}) toBody(ctx context.Context, state {{camelCase .N
 	{{- end}}
 	return body
 }
+{{- if hasSensitiveAttrRecursive .Attributes}}
+
+// withWriteOnly returns a copy of data with the values of write-only attributes
+// taken from config. Terraform always sets write-only attributes to null in the
+// plan, so their values are only available in the configuration. Nested lists
+// are cloned, so data itself is not modified.
+func (data {{camelCase .Name}}) withWriteOnly(config {{camelCase .Name}}) {{camelCase .Name}} {
+	{{- template "withWriteOnlyTemplate" .}}
+	return data
+}
+{{- end}}
 
 // End of section. //template:end toBody
+
+{{- define "withWriteOnlyTemplate"}}
+	{{- range .Attributes}}
+	{{- if or .Value .DataSourceOnly}}{{- continue}}{{- end}}
+	{{- if and .Sensitive (eq .Type "String")}}
+	data.{{toGoName .TfName}}Wo = config.{{toGoName .TfName}}Wo
+	{{- else if and (isNestedListSetMap .) (hasSensitiveAttrRecursive .Attributes)}}
+	{{- /* Plan and config list elements are matched by index, which Terraform guarantees for nested lists. Set elements have no stable order and differ between plan and config once write-only values are nulled, so they cannot be matched and are rejected instead of risking a secret being sent for the wrong element. Maps could be matched by key, but no definition needs that yet. */}}
+	{{- if not (isNestedList .)}}{{- errorf "write-only attributes are only supported in nested lists"}}{{- end}}
+	if len(data.{{toGoName .TfName}}) == len(config.{{toGoName .TfName}}) {
+		items := slices.Clone(data.{{toGoName .TfName}})
+		for i, config := range config.{{toGoName .TfName}} {
+			data := &items[i]
+			{{- template "withWriteOnlyTemplate" .}}
+		}
+		data.{{toGoName .TfName}} = items
+	}
+	{{- end}}
+	{{- end}}
+{{- end}}
 
 {{- define "toBodyPreservingNullsTemplate"}}
 	{{- range .Attributes}}

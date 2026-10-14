@@ -247,6 +247,22 @@ func (data ApplianceThirdPartyVPNPeers) toBody(ctx context.Context, state Applia
 	return body
 }
 
+// withWriteOnly returns a copy of data with the values of write-only attributes
+// taken from config. Terraform always sets write-only attributes to null in the
+// plan, so their values are only available in the configuration. Nested lists
+// are cloned, so data itself is not modified.
+func (data ApplianceThirdPartyVPNPeers) withWriteOnly(config ApplianceThirdPartyVPNPeers) ApplianceThirdPartyVPNPeers {
+	if len(data.Peers) == len(config.Peers) {
+		items := slices.Clone(data.Peers)
+		for i, config := range config.Peers {
+			data := &items[i]
+			data.SecretWo = config.SecretWo
+		}
+		data.Peers = items
+	}
+	return data
+}
+
 // End of section. //template:end toBody
 
 // Section below is generated&owned by "gen/generator.go". //template:begin toBodyPreservingNulls

@@ -163,7 +163,13 @@ func (r *NetworkDeviceClaimResource) Create(ctx context.Context, req resource.Cr
 	tflog.Debug(ctx, fmt.Sprintf("%s: Beginning Create", plan.Id.ValueString()))
 
 	// Create object
-	body := plan.toBody(ctx, NetworkDeviceClaim{})
+	// Write-only attributes are null in the plan, read them from the config
+	var config NetworkDeviceClaim
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	body := plan.withWriteOnly(config).toBody(ctx, NetworkDeviceClaim{})
 	res, err := r.client.Post(plan.getPath(), body)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Failed to configure object (POST/PUT), got error: %s, %s", err, res.String()))
@@ -276,6 +282,14 @@ func (r *NetworkDeviceClaimResource) Update(ctx context.Context, req resource.Up
 
 	tflog.Debug(ctx, fmt.Sprintf("%s: Beginning Update", plan.Id.ValueString()))
 
+	// Write-only attributes are null in the plan, read them from the config
+	var config NetworkDeviceClaim
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	detailsByDevice := plan.withWriteOnly(config).DetailsByDevice
+
 	var planSerials, stateSerials, removeSerials []string
 	plan.Serials.ElementsAs(ctx, &planSerials, false)
 	state.Serials.ElementsAs(ctx, &stateSerials, false)
@@ -290,7 +304,7 @@ func (r *NetworkDeviceClaimResource) Update(ctx context.Context, req resource.Up
 		}
 		if !found {
 			claimBody, _ = sjson.Set(claimBody, "serials.-1", planSerial)
-			for _, details := range plan.DetailsByDevice {
+			for _, details := range detailsByDevice {
 				if details.Serial.ValueString() == planSerial {
 					deviceDetailsBody, _ := sjson.Set("", "serial", details.Serial.ValueString())
 					for _, detail := range details.Details {

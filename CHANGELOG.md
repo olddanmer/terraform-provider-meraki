@@ -1,3 +1,7 @@
+## Unreleased
+
+- Fix write-only (`_wo`) attributes never being sent to the API, because the request body was built from the plan, where Terraform always sets write-only values to `null`. Configurations that already set `_wo` attributes will now send them on the next create or update, and a `_wo` attribute takes precedence over its non-write-only counterpart when both are set, [link](https://github.com/CiscoDevNet/terraform-provider-meraki/issues/291)
+
 ## 1.14.1
 
 - Fix `vlan` attribute of `meraki_switch_qos_rule` resource not accepting `null` (which represents any VLAN) - make it optional and explicitly send as `null` to the API, [link](https://github.com/CiscoDevNet/terraform-provider-meraki/issues/263)

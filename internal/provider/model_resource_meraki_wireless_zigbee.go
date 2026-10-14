@@ -90,6 +90,15 @@ func (data WirelessZigbee) toBody(ctx context.Context, state WirelessZigbee) str
 	return body
 }
 
+// withWriteOnly returns a copy of data with the values of write-only attributes
+// taken from config. Terraform always sets write-only attributes to null in the
+// plan, so their values are only available in the configuration. Nested lists
+// are cloned, so data itself is not modified.
+func (data WirelessZigbee) withWriteOnly(config WirelessZigbee) WirelessZigbee {
+	data.LockManagementPasswordWo = config.LockManagementPasswordWo
+	return data
+}
+
 // End of section. //template:end toBody
 
 // Section below is generated&owned by "gen/generator.go". //template:begin toBodyPreservingNulls

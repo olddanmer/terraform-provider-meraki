@@ -175,7 +175,13 @@ func (r *CameraWirelessProfileResource) Create(ctx context.Context, req resource
 	tflog.Debug(ctx, fmt.Sprintf("%s: Beginning Create", plan.Id.ValueString()))
 
 	// Create object
-	body := plan.toBody(ctx, CameraWirelessProfile{})
+	// Write-only attributes are null in the plan, read them from the config
+	var config CameraWirelessProfile
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	body := plan.withWriteOnly(config).toBody(ctx, CameraWirelessProfile{})
 	res, err := r.client.Post(plan.getPath(), body)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Failed to configure object (POST/PUT), got error: %s, %s", err, res.String()))
@@ -276,7 +282,13 @@ func (r *CameraWirelessProfileResource) Update(ctx context.Context, req resource
 
 	tflog.Debug(ctx, fmt.Sprintf("%s: Beginning Update", plan.Id.ValueString()))
 
-	body := plan.toBody(ctx, state)
+	// Write-only attributes are null in the plan, read them from the config
+	var config CameraWirelessProfile
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	body := plan.withWriteOnly(config).toBody(ctx, state)
 	res, err := r.client.Put(plan.getPath()+"/"+url.QueryEscape(plan.Id.ValueString()), body)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Failed to configure object (PUT), got error: %s, %s", err, res.String()))

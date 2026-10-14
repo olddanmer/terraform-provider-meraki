@@ -234,7 +234,13 @@ func (r *ApplianceSSIDResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Create object
-	body := plan.toBody(ctx, ApplianceSSID{})
+	// Write-only attributes are null in the plan, read them from the config
+	var config ApplianceSSID
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	body := plan.withWriteOnly(config).toBody(ctx, ApplianceSSID{})
 	res, err := r.client.Put(plan.getPath(), body)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Failed to configure object (POST/PUT), got error: %s, %s", err, res.String()))
@@ -335,7 +341,13 @@ func (r *ApplianceSSIDResource) Update(ctx context.Context, req resource.UpdateR
 
 	tflog.Debug(ctx, fmt.Sprintf("%s: Beginning Update", plan.Id.ValueString()))
 
-	body := plan.toBody(ctx, state)
+	// Write-only attributes are null in the plan, read them from the config
+	var config ApplianceSSID
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	body := plan.withWriteOnly(config).toBody(ctx, state)
 	res, err := r.client.Put(plan.getPath(), body)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Failed to configure object (PUT), got error: %s, %s", err, res.String()))

@@ -511,7 +511,17 @@ func (r *{{camelCase .Name}}Resource) Create(ctx context.Context, req resource.C
 	{{- end}}
 
 	// Create object
+	{{- if hasSensitiveAttrRecursive .Attributes}}
+	// Write-only attributes are null in the plan, read them from the config
+	var config {{camelCase .Name}}
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	body := plan.withWriteOnly(config).toBody(ctx, {{camelCase .Name}}{})
+	{{- else}}
 	body := plan.toBody(ctx, {{camelCase .Name}}{})
+	{{- end}}
 
 	{{- if .PutCreate}}
 	res, err := r.client.Put(plan.getPath(), body)
@@ -651,8 +661,19 @@ func (r *{{camelCase .Name}}Resource) Update(ctx context.Context, req resource.U
 
 	tflog.Debug(ctx, fmt.Sprintf("%s: Beginning Update", plan.Id.ValueString()))
 	{{- if not .NoUpdate}}
+	{{- if hasSensitiveAttrRecursive .Attributes}}
+
+	// Write-only attributes are null in the plan, read them from the config
+	var config {{camelCase .Name}}
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	body := plan.withWriteOnly(config).toBody(ctx, state)
+	{{- else}}
 
 	body := plan.toBody(ctx, state)
+	{{- end}}
 	{{- if .PutCreate}}
 	res, err := r.client.Put(plan.getPath(), body)
 	{{- else}}

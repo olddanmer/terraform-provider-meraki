@@ -287,7 +287,13 @@ func (r *ApplianceUplinksSettingsResource) Create(ctx context.Context, req resou
 	}
 
 	// Create object
-	body := plan.toBody(ctx, ApplianceUplinksSettings{})
+	// Write-only attributes are null in the plan, read them from the config
+	var config ApplianceUplinksSettings
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	body := plan.withWriteOnly(config).toBody(ctx, ApplianceUplinksSettings{})
 	res, err := r.client.Put(plan.getPath(), body)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Failed to configure object (POST/PUT), got error: %s, %s", err, res.String()))
@@ -388,7 +394,13 @@ func (r *ApplianceUplinksSettingsResource) Update(ctx context.Context, req resou
 
 	tflog.Debug(ctx, fmt.Sprintf("%s: Beginning Update", plan.Id.ValueString()))
 
-	body := plan.toBody(ctx, state)
+	// Write-only attributes are null in the plan, read them from the config
+	var config ApplianceUplinksSettings
+	diags = req.Config.Get(ctx, &config)
+	if resp.Diagnostics.Append(diags...); resp.Diagnostics.HasError() {
+		return
+	}
+	body := plan.withWriteOnly(config).toBody(ctx, state)
 	res, err := r.client.Put(plan.getPath(), body)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Failed to configure object (PUT), got error: %s, %s", err, res.String()))

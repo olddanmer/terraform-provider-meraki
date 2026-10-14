@@ -147,6 +147,22 @@ func (data ApplianceVPNBGP) toBody(ctx context.Context, state ApplianceVPNBGP) s
 	return body
 }
 
+// withWriteOnly returns a copy of data with the values of write-only attributes
+// taken from config. Terraform always sets write-only attributes to null in the
+// plan, so their values are only available in the configuration. Nested lists
+// are cloned, so data itself is not modified.
+func (data ApplianceVPNBGP) withWriteOnly(config ApplianceVPNBGP) ApplianceVPNBGP {
+	if len(data.Neighbors) == len(config.Neighbors) {
+		items := slices.Clone(data.Neighbors)
+		for i, config := range config.Neighbors {
+			data := &items[i]
+			data.AuthenticationPasswordWo = config.AuthenticationPasswordWo
+		}
+		data.Neighbors = items
+	}
+	return data
+}
+
 // End of section. //template:end toBody
 
 // Section below is generated&owned by "gen/generator.go". //template:begin toBodyPreservingNulls

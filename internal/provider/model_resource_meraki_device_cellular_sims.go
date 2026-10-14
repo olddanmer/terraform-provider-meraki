@@ -136,6 +136,29 @@ func (data DeviceCellularSIMs) toBody(ctx context.Context, state DeviceCellularS
 	return body
 }
 
+// withWriteOnly returns a copy of data with the values of write-only attributes
+// taken from config. Terraform always sets write-only attributes to null in the
+// plan, so their values are only available in the configuration. Nested lists
+// are cloned, so data itself is not modified.
+func (data DeviceCellularSIMs) withWriteOnly(config DeviceCellularSIMs) DeviceCellularSIMs {
+	if len(data.Sims) == len(config.Sims) {
+		items := slices.Clone(data.Sims)
+		for i, config := range config.Sims {
+			data := &items[i]
+			if len(data.Apns) == len(config.Apns) {
+				items := slices.Clone(data.Apns)
+				for i, config := range config.Apns {
+					data := &items[i]
+					data.AuthenticationPasswordWo = config.AuthenticationPasswordWo
+				}
+				data.Apns = items
+			}
+		}
+		data.Sims = items
+	}
+	return data
+}
+
 // End of section. //template:end toBody
 
 // Section below is generated&owned by "gen/generator.go". //template:begin toBodyPreservingNulls

@@ -114,6 +114,29 @@ func (data NetworkDeviceClaim) toBody(ctx context.Context, state NetworkDeviceCl
 	return body
 }
 
+// withWriteOnly returns a copy of data with the values of write-only attributes
+// taken from config. Terraform always sets write-only attributes to null in the
+// plan, so their values are only available in the configuration. Nested lists
+// are cloned, so data itself is not modified.
+func (data NetworkDeviceClaim) withWriteOnly(config NetworkDeviceClaim) NetworkDeviceClaim {
+	if len(data.DetailsByDevice) == len(config.DetailsByDevice) {
+		items := slices.Clone(data.DetailsByDevice)
+		for i, config := range config.DetailsByDevice {
+			data := &items[i]
+			if len(data.Details) == len(config.Details) {
+				items := slices.Clone(data.Details)
+				for i, config := range config.Details {
+					data := &items[i]
+					data.ValueWo = config.ValueWo
+				}
+				data.Details = items
+			}
+		}
+		data.DetailsByDevice = items
+	}
+	return data
+}
+
 // End of section. //template:end toBody
 
 // Section below is generated&owned by "gen/generator.go". //template:begin fromBody

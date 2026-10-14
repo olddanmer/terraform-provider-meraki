@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -135,6 +136,23 @@ func (data ApplianceSSID) toBody(ctx context.Context, state ApplianceSSID) strin
 		}
 	}
 	return body
+}
+
+// withWriteOnly returns a copy of data with the values of write-only attributes
+// taken from config. Terraform always sets write-only attributes to null in the
+// plan, so their values are only available in the configuration. Nested lists
+// are cloned, so data itself is not modified.
+func (data ApplianceSSID) withWriteOnly(config ApplianceSSID) ApplianceSSID {
+	data.PskWo = config.PskWo
+	if len(data.RadiusServers) == len(config.RadiusServers) {
+		items := slices.Clone(data.RadiusServers)
+		for i, config := range config.RadiusServers {
+			data := &items[i]
+			data.SecretWo = config.SecretWo
+		}
+		data.RadiusServers = items
+	}
+	return data
 }
 
 // End of section. //template:end toBody

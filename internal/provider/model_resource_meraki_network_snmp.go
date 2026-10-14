@@ -96,6 +96,23 @@ func (data NetworkSNMP) toBody(ctx context.Context, state NetworkSNMP) string {
 	return body
 }
 
+// withWriteOnly returns a copy of data with the values of write-only attributes
+// taken from config. Terraform always sets write-only attributes to null in the
+// plan, so their values are only available in the configuration. Nested lists
+// are cloned, so data itself is not modified.
+func (data NetworkSNMP) withWriteOnly(config NetworkSNMP) NetworkSNMP {
+	data.CommunityStringWo = config.CommunityStringWo
+	if len(data.Users) == len(config.Users) {
+		items := slices.Clone(data.Users)
+		for i, config := range config.Users {
+			data := &items[i]
+			data.PassphraseWo = config.PassphraseWo
+		}
+		data.Users = items
+	}
+	return data
+}
+
 // End of section. //template:end toBody
 
 // Section below is generated&owned by "gen/generator.go". //template:begin toBodyPreservingNulls

@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
 
 	"github.com/CiscoDevNet/terraform-provider-meraki/internal/provider/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -248,6 +249,30 @@ func (data SwitchAccessPolicy) toBody(ctx context.Context, state SwitchAccessPol
 		body, _ = sjson.Set(body, "urlRedirectWalledGardenRanges", values)
 	}
 	return body
+}
+
+// withWriteOnly returns a copy of data with the values of write-only attributes
+// taken from config. Terraform always sets write-only attributes to null in the
+// plan, so their values are only available in the configuration. Nested lists
+// are cloned, so data itself is not modified.
+func (data SwitchAccessPolicy) withWriteOnly(config SwitchAccessPolicy) SwitchAccessPolicy {
+	if len(data.RadiusAccountingServers) == len(config.RadiusAccountingServers) {
+		items := slices.Clone(data.RadiusAccountingServers)
+		for i, config := range config.RadiusAccountingServers {
+			data := &items[i]
+			data.SecretWo = config.SecretWo
+		}
+		data.RadiusAccountingServers = items
+	}
+	if len(data.RadiusServers) == len(config.RadiusServers) {
+		items := slices.Clone(data.RadiusServers)
+		for i, config := range config.RadiusServers {
+			data := &items[i]
+			data.SecretWo = config.SecretWo
+		}
+		data.RadiusServers = items
+	}
+	return data
 }
 
 // End of section. //template:end toBody
